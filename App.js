@@ -1,4 +1,10 @@
-import React, {useState, useRef} from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   View,
   Text,
@@ -6,51 +12,41 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-} from 'react-native';
-
-const candle = <Text style={{fontSize: 26}}>📍</Text>;
+} from "react-native";
+import Button from "./src/components/Button";
 
 const App = () => {
   const [playerCounter, setPlayerCounter] = useState(0);
   const [computerCounter, setComputerCounter] = useState(0);
   const [actionDisabled, setActionDisabled] = useState(false);
   const count = useRef(25);
-  if (count.current === 0) {
-    if (playerCounter % 2 == 0) {
-      Alert.alert('You Win', 'Play Again?', [
-        {
-          text: 'Ok',
-          onPress: () => {
-            nextGame();
-          },
-        },
-      ]);
-    } else {
-      Alert.alert('You Lose', 'Play Again?', [
-        {
-          text: 'Ok',
-          onPress: () => {
-            nextGame();
-          },
-        },
-      ]);
+
+  useEffect(() => {
+    if (count.current === 0) {
+      showAlert();
     }
-  }
-  const nextGame = () => {
+  }, [count.current]);
+
+  const showAlert = useCallback(() => {
+    const message = playerCounter % 2 == 0 ? "You win" : "You lose";
+    Alert.alert(message, "Play Again?", [
+      {
+        text: "Ok",
+        onPress: () => {
+          nextGame();
+        },
+      },
+    ]);
+  });
+
+  const nextGame = useCallback(() => {
     count.current = 25;
     setPlayerCounter(0);
     setComputerCounter(0);
     setActionDisabled(false);
-  };
-  const getCandles = () => {
-    const candles = [];
-    for (let k = 0; k < count.current; k++) {
-      candles.push(<View key={k}>{candle}</View>);
-    }
-    return candles;
-  };
+  });
 
-  const user = n => {
+  const user = useCallback((n) => {
     if (n <= count.current) {
       count.current -= n;
       setPlayerCounter(playerCounter + n);
@@ -59,18 +55,18 @@ const App = () => {
         computer();
       }
     }
-  };
+  });
 
-  const computer = () => {
+  const computer = useCallback(() => {
     let number = randomInteger();
     setTimeout(() => {
       count.current -= number;
       setComputerCounter(computerCounter + number);
       setActionDisabled(false);
     }, 1000);
-  };
+  });
 
-  const randomInteger = () => {
+  const randomInteger = useCallback(() => {
     let min = 1;
     let max = 3;
     if (count.current === 2) {
@@ -80,58 +76,54 @@ const App = () => {
     }
     let rand = min - 0.5 + Math.random() * (max - min + 1);
     return Math.round(rand);
-  };
-  console.log(actionDisabled);
+  });
+
+  const candlsList = useCallback(() =>
+    new Array(count.current).fill("📍").map((item, index) => (
+      <Text key={index} style={{ fontSize: 30 }}>
+        {item}
+      </Text>
+    ))
+  );
   return (
     <SafeAreaView
       style={{
         flex: 1,
-        justifyContent: 'center',
-        justifyContent: 'space-around',
-      }}>
+        justifyContent: "center",
+        justifyContent: "space-around",
+      }}
+    >
       <View style={styles.amount}>
-        <Text style={{fontSize: 50}}>{count.current}</Text>
+        <Text style={{ fontSize: 50, fontWeight: "bold" }}>
+          {count.current}
+        </Text>
       </View>
       <View style={styles.candles}>
-        <View style={styles.allCandle}>{getCandles()}</View>
+        <View style={styles.allCandle}>{candlsList()}</View>
       </View>
       <View
         style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-        }}>
-        <View style={{alignItems: 'center'}}>
-          <Text style={{fontSize: 20}}>Computer</Text>
-          <Text style={{ fontSize: 20}}>{computerCounter}</Text>
+          flexDirection: "row",
+          justifyContent: "space-around",
+        }}
+      >
+        <View style={{ alignItems: "center" }}>
+          <Text style={{ fontSize: 25, fontWeight: "bold", marginBottom: 10 }}>
+            Computer
+          </Text>
+          <Text style={{ fontSize: 30 }}>{computerCounter}</Text>
         </View>
-        <View style={{alignItems: 'center'}}>
-          <Text style={{fontSize: 20}}>You</Text>
-          <Text style={{ fontSize: 20}}>{playerCounter}</Text>
+        <View style={{ alignItems: "center" }}>
+          <Text style={{ fontSize: 25, fontWeight: "bold", marginBottom: 10 }}>
+            You
+          </Text>
+          <Text style={{ fontSize: 30 }}>{playerCounter}</Text>
         </View>
       </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-        }}>
-        <TouchableOpacity
-          onPress={() => user(1)}
-          style={styles.button}
-          disabled={actionDisabled}>
-          <Text style={{ fontSize: 20}}>1</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => user(2)}
-          style={styles.button}
-          disabled={actionDisabled}>
-          <Text style={{ fontSize: 20}}>2</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => user(3)}
-          style={styles.button}
-          disabled={actionDisabled}>
-          <Text style={{ fontSize: 20}}>3</Text>
-        </TouchableOpacity>
+      <View style={styles.allButton}>
+        <Button number={1} actionDisabled={actionDisabled} user={user} />
+        <Button number={2} actionDisabled={actionDisabled} user={user} />
+        <Button number={3} actionDisabled={actionDisabled} user={user} />
       </View>
     </SafeAreaView>
   );
@@ -139,25 +131,21 @@ const App = () => {
 
 const styles = StyleSheet.create({
   candles: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   amount: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   allCandle: {
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
     width: 330,
     height: 150,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
   },
-  button: {
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 70,
-    height: 55,
-    borderRadius: 30
+  allButton: {
+    flexDirection: "row",
+    justifyContent: "space-around",
   },
 });
 
